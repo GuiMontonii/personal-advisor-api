@@ -1,0 +1,36 @@
+
+# Credenciais e configurações locais
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Arquivos temporários
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+.cursor/
+
+# Documentação interna
+/JUSTIFICATIVA.md
+/decisao_tecnica.md
+/LEIAME_ETAPAS_5_6.md
+/LEIA-ME_MESCLA.md
+
+# Backups e arquivos compactados
+*.zip
+*.bak
+*.backup

@@ -1,0 +1,16 @@
+fastapi>=0.120,<1
+uvicorn[standard]>=0.38,<1
+python-dotenv>=1,<2
+pydantic>=2,<3
+psycopg2-binary>=2.9,<3
+pymongo>=4,<5
+qdrant-client>=1.14,<2
+langchain>=1,<2
+langgraph>=1,<2
+langchain-google-genai>=4,<5
+langchain-groq>=1,<2
+langchain-community==0.4.2
+langchain-text-splitters>=1,<2
+pypdf>=5,<9
+mcp>=2,<3
+tzdata>=2026.1
