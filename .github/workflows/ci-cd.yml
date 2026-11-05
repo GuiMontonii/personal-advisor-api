@@ -1,0 +1,92 @@
+name: CI/CD - AssessorIA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: assessor-ci-cd-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    name: CI - validacao
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout do projeto
+        uses: actions/checkout@v6
+
+      - name: Configurar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Verificar erros criticos de codigo
+        run: ruff check --select E9,F63,F7,F82 app testar_*.py scripts tests
+
+      - name: Verificar compilacao
+        run: python -m compileall -q app scripts tests testar_*.py
+
+      - name: Testar transacoes e rollback
+        run: python testar_etapa8.py
+
+      - name: Testar agenda e isolamento por usuario
+        run: python testar_agenda_etapa8.py
+
+      - name: Testar operacoes financeiras
+        run: python testar_financeiro.py
+
+      - name: Testar API sem servicos externos
+        run: python testar_smoke_api.py
+
+      - name: Testar integracao do deploy com Render (simulada)
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+  cd:
+    name: CD - Render
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    concurrency:
+      group: assessor-production-deploy
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout do projeto
+        uses: actions/checkout@v6
+
+      - name: Configurar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Publicar e validar o commit no Render
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          APP_URL: ${{ vars.APP_URL }}
+          EXPECTED_COMMIT_SHA: ${{ github.sha }}
+          DEPLOY_TIMEOUT_SECONDS: '1200'
+          DEPLOY_POLL_SECONDS: '15'
+        run: python scripts/render_deploy.py
